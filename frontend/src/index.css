@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ============================================
+   MATRIX WEAPON DETECTION SYSTEM — Theme CSS
+   Colors from original src/config.py:
+     BG: #020b02, Accent: #00ff41, Muted: #00aa55
+   ============================================ */
+
+:root {
+  --matrix-bg:         #020b02;
+  --matrix-sidebar:    #020f06;
+  --matrix-panel:      #031a09;
+  --matrix-btn:        #052b11;
+  --matrix-btn-hover:  #0a3d1a;
+  --matrix-accent:     #00ff41;
+  --matrix-muted:      #00aa55;
+  --matrix-border:     #004d1f;
+  --matrix-glow:       0 0 12px rgba(0, 255, 65, 0.4);
+}
+
+/* ── Base ─────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--matrix-bg);
+  color: var(--matrix-accent);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* ── Scrollbar ────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--matrix-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--matrix-muted); }
+
+/* ── Tailwind color utilities ─────────────── */
+@theme {
+  --color-matrix-bg:        #020b02;
+  --color-matrix-sidebar:   #020f06;
+  --color-matrix-panel:     #031a09;
+  --color-matrix-btn:       #052b11;
+  --color-matrix-btn-hover: #0a3d1a;
+  --color-matrix-accent:    #00ff41;
+  --color-matrix-muted:     #00aa55;
+  --color-matrix-border:    #004d1f;
+}
+
+/* ── Custom animations ────────────────────── */
+@keyframes matrix-scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes ping-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(1.4); }
+}
+
+@keyframes pulse-fast {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+@keyframes scan-line {
+  0%   { top: 0; }
+  100% { top: 100%; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(0,255,65,0.3); }
+  50%       { box-shadow: 0 0 18px rgba(0,255,65,0.7); }
+}
+
+.animate-matrix-scan    { animation: matrix-scan 4s linear infinite; }
+.animate-ping-slow      { animation: ping-slow 1.5s ease-in-out infinite; }
+.animate-pulse-fast     { animation: pulse-fast 0.8s ease-in-out infinite; }
+.animate-scan-line      { animation: scan-line 2s linear infinite; }
+.animate-glow-pulse     { animation: glow-pulse 2s ease-in-out infinite; }
+
+/* ── Glow effects ─────────────────────────── */
+.shadow-matrix-glow     { box-shadow: var(--matrix-glow); }
+.text-glow              { text-shadow: 0 0 8px rgba(0, 255, 65, 0.6); }
+
+/* ── Terminal cursor blink ────────────────── */
+.cursor-blink::after {
+  content: '█';
+  animation: pulse-fast 1s step-end infinite;
+  color: var(--matrix-accent);
+  opacity: 0.8;
+}
+
+/* ── Selection ────────────────────────────── */
+::selection {
+  background: rgba(0, 255, 65, 0.2);
+  color: var(--matrix-accent);
+}

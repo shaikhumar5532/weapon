@@ -1,8 +1,26 @@
-# Ignore dataset folder
+# ── Datasets & Training ──────────────────────
 Dataset/
-
-# Ignore YOLO runs
 runs/
 
-# Ignore virtual environment
+# ── Python ────────────────────────────────────
 venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# ── Backend ───────────────────────────────────
+backend/__pycache__/
+backend/uploads/
+backend/outputs/
+backend/.env
+
+# ── Frontend ──────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# ── OS ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
