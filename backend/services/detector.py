@@ -89,7 +89,14 @@ class DetectorService:
         r = results[0]
 
         # Draw bounding boxes manually for full control
+        # Use PIL as fallback for cv2.imread (handles Windows path/encoding issues)
         img = cv2.imread(str(image_path))
+        if img is None:
+            try:
+                pil_img = Image.open(str(image_path)).convert("RGB")
+                img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            except Exception as e:
+                raise RuntimeError(f"Cannot read image file: {e}")
         detections = []
 
         for box in r.boxes:

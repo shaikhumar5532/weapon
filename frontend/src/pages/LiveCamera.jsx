@@ -10,7 +10,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import BoundingBoxCanvas from '../components/BoundingBoxCanvas';
 import AlertBanner from '../components/AlertBanner';
 
-const FRAME_INTERVAL_MS = 100; // 10fps to backend
+const FRAME_INTERVAL_MS = 150; // ~7fps to backend — balanced for performance
 
 export default function LiveCamera({ log, addDetection }) {
   const videoRef = useRef(null);
@@ -26,60 +26,73 @@ export default function LiveCamera({ log, addDetection }) {
   const [annotatedSrc, setAnnotatedSrc] = useState(null);
   const [threatDetected, setThreatDetected] = useState(false);
 
-  // WebSocket hook
-  const { connect, disconnect, sendFrame, connected } = useWebSocket({
-    onConnected: () => {
-      log?.('MATRIX NODE CONNECTED. SCANNING...', 'info');
-    },
-    onDetection: useCallback((data) => {
-      setDetections(data.detections || []);
-      setFps(data.fps || 0);
-      setFrameCount(data.frame_number || 0);
-      setTotalDetections(data.total_detections || 0);
+  // Stable callback refs — prevents useWebSocket from re-initializing on every render
+  const onDetectionRef = useRef(null);
+  const onConnectedRef = useRef(null);
+  const onErrorRef = useRef(null);
+  const onDisconnectedRef = useRef(null);
 
-      if (data.annotated_frame) {
-        setAnnotatedSrc(`data:image/jpeg;base64,${data.annotated_frame}`);
-      }
+  // Keep refs in sync with the latest closures (updated on every render — this is intentional)
+  onDetectionRef.current = (data) => {
+    setDetections(data.detections || []);
+    setFps(data.fps || 0);
+    setFrameCount(data.frame_number || 0);
+    setTotalDetections(data.total_detections || 0);
 
-      if (data.threat_detected && data.detections?.length) {
-        setThreatDetected(true);
-        const det = data.detections[0];
-        log?.(`WEBCAM: ${det.class_name} DETECTED — ${(det.confidence * 100).toFixed(1)}%`, 'threat');
-        addDetection?.({
-          weapon: det.class_name,
-          confidence: det.confidence,
-          source: 'webcam',
-          thumbnail: data.annotated_frame,
-          detections: data.detections,
-        });
-      } else {
-        setThreatDetected(false);
-      }
-    }, [log, addDetection]),
+    if (data.annotated_frame) {
+      setAnnotatedSrc(`data:image/jpeg;base64,${data.annotated_frame}`);
+    }
 
-    onError: useCallback((msg) => {
-      log?.(`WebSocket error: ${msg}`, 'error');
-    }, [log]),
+    if (data.threat_detected && data.detections?.length) {
+      setThreatDetected(true);
+      const det = data.detections[0];
+      log?.(`WEBCAM: ${det.class_name} DETECTED — ${(det.confidence * 100).toFixed(1)}%`, 'threat');
+      addDetection?.({
+        weapon: det.class_name,
+        confidence: det.confidence,
+        source: 'webcam',
+        thumbnail: data.annotated_frame,
+        detections: data.detections,
+      });
+    } else {
+      setThreatDetected(false);
+    }
+  };
 
-    onDisconnected: useCallback(() => {
-      log?.('Webcam stopped.', 'info');
-    }, [log]),
+  onConnectedRef.current = () => {
+    log?.('MATRIX NODE CONNECTED. SCANNING...', 'info');
+    // ✅ FIX Bug 1: Start frame capture ONLY after WebSocket is confirmed open
+    clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas) return;
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(blob);
+        }
+      }, 'image/jpeg', 0.7);
+    }, FRAME_INTERVAL_MS);
+  };
+
+  onErrorRef.current = (msg) => log?.(`WebSocket error: ${msg}`, 'error');
+  onDisconnectedRef.current = () => log?.('Webcam stopped.', 'info');
+
+  // WebSocket hook — stable callbacks via refs
+  const { connect, disconnect, wsRef, connected } = useWebSocket({
+    onConnected: useCallback((...args) => onConnectedRef.current?.(...args), []),
+    onDetection: useCallback((...args) => onDetectionRef.current?.(...args), []),
+    onError: useCallback((...args) => onErrorRef.current?.(...args), []),
+    onDisconnected: useCallback((...args) => onDisconnectedRef.current?.(...args), []),
   });
 
-  const captureAndSend = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || !connected) return;
-
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-
-    canvas.toBlob((blob) => {
-      if (blob) sendFrame(blob);
-    }, 'image/jpeg', 0.7);
-  }, [connected, sendFrame]);
+  // captureAndSend is now inlined inside onConnectedRef for correct timing
+  // Kept as a no-op stub to avoid breaking other refs
+  const captureAndSend = useCallback(() => {}, []);
 
   const startCamera = async () => {
     setError(null);
@@ -93,12 +106,11 @@ export default function LiveCamera({ log, addDetection }) {
         videoRef.current.srcObject = stream;
       }
       setActive(true);
-      connect();
       log?.('Starting webcam...', 'info');
+      // ✅ FIX Bug 1: connect() triggers onConnected, which starts the interval
+      connect();
       log?.('Camera connected. Feed active.', 'info');
-
-      // Start frame capture loop
-      intervalRef.current = setInterval(captureAndSend, FRAME_INTERVAL_MS);
+      // NOTE: DO NOT start setInterval here — it starts in onConnectedRef after WS opens
     } catch (err) {
       const msg = err.name === 'NotAllowedError'
         ? 'Camera permission denied. Please allow camera access.'
@@ -133,14 +145,6 @@ export default function LiveCamera({ log, addDetection }) {
     log?.('STOP FEED: Camera disconnected.', 'info');
   }, [disconnect, log]);
 
-  // Update interval callback when captureAndSend changes
-  useEffect(() => {
-    if (active && intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = setInterval(captureAndSend, FRAME_INTERVAL_MS);
-    }
-  }, [captureAndSend, active]);
-
   useEffect(() => {
     return () => {
       clearInterval(intervalRef.current);
@@ -169,25 +173,35 @@ export default function LiveCamera({ log, addDetection }) {
         <div className="flex-1 flex flex-col gap-3">
           {/* Video container */}
           <div className="relative rounded border border-matrix-border overflow-hidden bg-black flex-1 min-h-[300px]">
-            {/* Live video stream */}
+            {/* ✅ FIX Bug 2: Show annotated frame (from backend) as primary display when available.
+                 The raw video element is always rendered (hidden) for capture — never shown directly. */}
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
               className="w-full h-full object-cover"
-              style={{ display: active ? 'block' : 'none' }}
+              style={{ display: 'none' }}  // always hidden — used only for frame capture
             />
 
-            {/* Bounding box overlay */}
-            {active && annotatedSrc && (
+            {/* Annotated frame from backend (has bounding boxes drawn) */}
+            {active && annotatedSrc ? (
               <img
                 src={annotatedSrc}
-                alt="Annotated"
-                className="absolute inset-0 w-full h-full object-cover opacity-90"
-                style={{ mixBlendMode: 'screen' }}
+                alt="Annotated webcam feed"
+                className="w-full h-full object-cover"
               />
-            )}
+            ) : active ? (
+              /* Fallback: raw mirrored video while waiting for first backend frame */
+              <video
+                autoPlay
+                playsInline
+                muted
+                ref={(el) => { if (el && streamRef.current) el.srcObject = streamRef.current; }}
+                className="w-full h-full object-cover"
+                style={{ transform: 'scaleX(-1)' }}
+              />
+            ) : null}
 
             {/* Hidden capture canvas */}
             <canvas ref={canvasRef} className="hidden" />

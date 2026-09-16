@@ -65,5 +65,5 @@ export function useWebSocket({ onDetection, onConnected, onError, onDisconnected
     }
   }, []);
 
-  return { connect, disconnect, sendFrame, connected, connecting };
+  return { connect, disconnect, sendFrame, connected, connecting, wsRef };
 }

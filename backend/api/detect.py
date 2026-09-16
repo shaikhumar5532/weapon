@@ -197,7 +197,7 @@ async def _process_video_job(job_id: str, video_path: Path):
     FRAME_SKIP = 3
 
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         while True:
             if job["stop_requested"]:

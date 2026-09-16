@@ -42,7 +42,7 @@ async def webcam_detection(websocket: WebSocket):
     start_time = time.time()
 
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         while True:
             # Receive frame bytes from browser
