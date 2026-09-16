@@ -164,7 +164,7 @@ export default function LiveCamera({ log, addDetection }) {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+      <div className="flex flex-col sm:flex-row gap-4 flex-1 min-h-0">
         {/* Camera feed */}
         <div className="flex-1 flex flex-col gap-3">
           {/* Video container */}
@@ -255,7 +255,7 @@ export default function LiveCamera({ log, addDetection }) {
         </div>
 
         {/* Right panel: detections + stats */}
-        <div className="lg:w-72 flex flex-col gap-3">
+        <div className="sm:w-64 lg:w-72 flex flex-col gap-3">
           {/* Stats */}
           <div className="p-3 rounded border border-matrix-border bg-matrix-panel space-y-2">
             <div className="font-mono text-xs text-matrix-accent tracking-widest mb-2">&gt; LIVE STATS</div>

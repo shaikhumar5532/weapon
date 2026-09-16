@@ -33,23 +33,23 @@ export default function Dashboard({ history = [], logEntries = [] }) {
   return (
     <div className="flex flex-col gap-6 h-full">
       {/* Hero banner with Matrix rain */}
-      <div className="relative rounded border border-matrix-border overflow-hidden h-44 flex-shrink-0">
+      <div className="relative rounded border border-matrix-border overflow-hidden h-32 md:h-44 flex-shrink-0">
         <div className="absolute inset-0 opacity-20">
           <MatrixRain />
         </div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full gap-2 text-center px-4">
-          <div className="flex items-center gap-3 mb-1">
-            <Shield size={24} className="text-matrix-accent" />
-            <h1 className="font-mono text-2xl font-bold text-matrix-accent tracking-widest">
+          <div className="flex items-center gap-2 md:gap-3 mb-1">
+            <Shield size={20} className="text-matrix-accent flex-shrink-0" />
+            <h1 className="font-mono text-base md:text-2xl font-bold text-matrix-accent tracking-widest leading-tight">
               MATRIX // WEAPON DETECTION SYSTEM
             </h1>
           </div>
-          <p className="font-mono text-xs text-matrix-muted tracking-widest">
+          <p className="font-mono text-xs text-matrix-muted tracking-widest hidden sm:block">
             AI-POWERED THREAT ANALYSIS · YOLOV8 ENGINE · REAL-TIME DETECTION
           </p>
-          <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded border border-matrix-border bg-black/60">
-            <div className={`w-2 h-2 rounded-full ${health ? 'bg-matrix-accent animate-pulse' : 'bg-red-500'}`} />
-            <span className="font-mono text-xs text-matrix-muted">
+          <div className="flex items-center gap-2 mt-1 md:mt-2 px-3 py-1.5 rounded border border-matrix-border bg-black/60">
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${health ? 'bg-matrix-accent animate-pulse' : 'bg-red-500'}`} />
+            <span className="font-mono text-xs text-matrix-muted truncate">
               {health ? `SYSTEM ONLINE · MODEL ${health.model.toUpperCase()} · v${health.version}` : 'SYSTEM OFFLINE'}
             </span>
           </div>

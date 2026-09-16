@@ -98,3 +98,31 @@ html, body, #root {
   background: rgba(0, 255, 65, 0.2);
   color: var(--matrix-accent);
 }
+
+/* ── Mobile touch optimizations ───────────────── */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile drawer drop shadow */
+.mobile-drawer {
+  box-shadow: 4px 0 24px rgba(0, 255, 65, 0.08), 4px 0 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Safe-area insets for notched / home-bar devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-drawer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent body scroll when mobile nav is open */
+body.nav-open {
+  overflow: hidden;
+}
+
+/* Smooth momentum scroll on iOS */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}

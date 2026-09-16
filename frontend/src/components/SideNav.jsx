@@ -1,9 +1,11 @@
 /**
  * SideNav — Matrix-themed navigation sidebar.
- * Mirrors the control panel layout from ui.py.
+ * Desktop (≥ md): fixed w-64 sidebar.
+ * Mobile (< md): off-canvas drawer that slides in from the left.
  */
 
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import {
   Image,
   Video,
@@ -21,9 +23,37 @@ const NAV_ITEMS = [
   { path: '/log', label: 'SYSTEM LOG', icon: ScrollText },
 ];
 
-export default function SideNav({ logEntries = 0, threatCount = 0 }) {
+export default function SideNav({ logEntries = 0, threatCount = 0, mobileOpen = false, onClose }) {
+  const location = useLocation();
+
+  // Auto-close drawer on route change (mobile tap)
+  useEffect(() => {
+    if (mobileOpen) onClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   return (
-    <nav className="flex flex-col h-full bg-matrix-sidebar border-r border-matrix-border w-64 flex-shrink-0">
+    <>
+      {/* ── Mobile off-canvas drawer ─────────────────────── */}
+      <div
+        className={`mobile-drawer md:hidden flex flex-col h-full bg-matrix-sidebar border-r border-matrix-border w-72 fixed top-0 left-0 z-50 transition-transform duration-300 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <NavContents logEntries={logEntries} threatCount={threatCount} />
+      </div>
+
+      {/* ── Desktop sidebar ───────────────────────────────── */}
+      <nav className="hidden md:flex flex-col h-full bg-matrix-sidebar border-r border-matrix-border w-64 flex-shrink-0">
+        <NavContents logEntries={logEntries} threatCount={threatCount} />
+      </nav>
+    </>
+  );
+}
+
+function NavContents({ logEntries, threatCount }) {
+  return (
+    <>
       {/* Logo */}
       <div className="px-5 py-6 border-b border-matrix-border">
         <div className="flex items-center gap-3 mb-1">
@@ -48,14 +78,14 @@ export default function SideNav({ logEntries = 0, threatCount = 0 }) {
       </div>
 
       {/* Nav items */}
-      <div className="flex-1 px-3 space-y-1">
+      <div className="flex-1 px-3 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map(({ path, label, icon: Icon, exact }) => (
           <NavLink
             key={path}
             to={path}
             end={exact}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded font-mono text-sm tracking-wider transition-all duration-150 border ${
+              `flex items-center gap-3 px-3 py-3 rounded font-mono text-sm tracking-wider transition-all duration-150 border touch-manipulation ${
                 isActive
                   ? 'bg-matrix-btn-hover border-matrix-accent text-matrix-accent shadow-matrix-glow'
                   : 'border-transparent text-matrix-muted hover:border-matrix-border hover:text-matrix-accent hover:bg-matrix-btn'
@@ -93,6 +123,6 @@ export default function SideNav({ logEntries = 0, threatCount = 0 }) {
           Made with ❤️ by Umar Team
         </p>
       </div>
-    </nav>
+    </>
   );
 }
