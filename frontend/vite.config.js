@@ -13,15 +13,15 @@ export default defineConfig({
     proxy: {
       // Proxy API calls to FastAPI backend in development
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'https://weapon-ztg5.onrender.com',
         changeOrigin: true,
       },
       '/outputs': {
-        target: 'http://localhost:8000',
+        target: 'https://weapon-ztg5.onrender.com',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: 'wss://weapon-ztg5.onrender.com',
         ws: true,
         changeOrigin: true,
       },
