@@ -11,6 +11,7 @@ Handles all YOLOv8 inference:
 import io
 import time
 import base64
+import torch
 from pathlib import Path
 from typing import Optional
 
@@ -63,6 +64,34 @@ class DetectorService:
         self.model_path = model_path
         try:
             print(f"[MATRIX] Loading model from: {model_path}")
+
+            # ── PyTorch 2.6+ Fix ──────────────────────────────────────────────
+            # PyTorch 2.6 changed torch.load() default to weights_only=True,
+            # which blocks Ultralytics' DetectionModel and related classes.
+            # We explicitly add them to safe globals so security stays enabled
+            # while our trusted model checkpoint can load correctly.
+            try:
+                import ultralytics.nn.tasks as _tasks
+                import ultralytics.nn.modules as _modules
+
+                _safe_classes = [
+                    _tasks.DetectionModel,
+                    _tasks.SegmentationModel,
+                    _tasks.PoseModel,
+                    _tasks.ClassificationModel,
+                ]
+                # Add any additional nn.Module subclasses Ultralytics uses
+                for _attr in dir(_modules):
+                    _obj = getattr(_modules, _attr, None)
+                    if isinstance(_obj, type) and issubclass(_obj, torch.nn.Module):
+                        _safe_classes.append(_obj)
+
+                torch.serialization.add_safe_globals(_safe_classes)
+                print("[MATRIX] Registered Ultralytics classes as torch safe globals.")
+            except Exception as _safe_err:
+                # If add_safe_globals is unavailable (PyTorch < 2.4), that's fine
+                print(f"[MATRIX] safe_globals registration skipped: {_safe_err}")
+
             self.model = YOLO(str(model_path))
             self.loaded = True
             self.load_error = None

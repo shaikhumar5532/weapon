@@ -2,6 +2,11 @@ fastapi==0.111.0
 uvicorn[standard]==0.29.0
 python-multipart==0.0.9
 websockets==12.0
+# Pin torch below 2.6 to avoid weights_only=True breaking change.
+# The code-level fix in services/detector.py also handles newer torch via
+# torch.serialization.add_safe_globals(), so both defences are in place.
+torch==2.5.1
+torchvision==0.20.1
 ultralytics==8.2.18
 opencv-python-headless==4.9.0.80
 Pillow==10.3.0
