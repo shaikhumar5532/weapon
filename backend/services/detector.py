@@ -12,12 +12,35 @@ import io
 import time
 import base64
 import torch
+import functools
 from pathlib import Path
 from typing import Optional
 
 import cv2
 import numpy as np
 from PIL import Image
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PyTorch 2.6+ Compatibility Patch
+# torch.load() changed its default from weights_only=False to weights_only=True
+# in PyTorch 2.6, which breaks loading of Ultralytics .pt model checkpoints
+# that contain DetectionModel and other custom classes.
+#
+# Fix strategy (belt + suspenders + duct tape):
+#   1. Monkey-patch torch.load to force weights_only=False for trusted .pt files
+#   2. Also call add_safe_globals() to whitelist Ultralytics classes (done in load())
+# ──────────────────────────────────────────────────────────────────────────────
+_original_torch_load = torch.load
+
+@functools.wraps(_original_torch_load)
+def _patched_torch_load(f, *args, **kwargs):
+    """Force weights_only=False so Ultralytics .pt models always load."""
+    kwargs["weights_only"] = False
+    return _original_torch_load(f, *args, **kwargs)
+
+torch.load = _patched_torch_load
+print("[MATRIX] torch.load patched: weights_only=False enforced for model loading.")
+
 from ultralytics import YOLO
 
 # ──────────────────────────────────────────────
