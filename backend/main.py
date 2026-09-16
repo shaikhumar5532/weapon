@@ -30,7 +30,12 @@ UPLOAD_DIR = BASE_DIR / os.getenv("UPLOAD_DIR", "uploads")
 OUTPUT_DIR = BASE_DIR / os.getenv("OUTPUT_DIR", "outputs")
 
 # CORS origins
-_cors_env = os.getenv("CORS_ORIGINS", "http://localhost:5173")
+_cors_env = os.getenv(
+    "CORS_ORIGINS",
+    # Default includes both local dev and the production Netlify frontend.
+    # NOTE: backend/.env is gitignored so this default is what Render uses.
+    "http://localhost:5173,http://localhost:3000,https://weapon-detection-ai.netlify.app"
+)
 CORS_ORIGINS = [o.strip() for o in _cors_env.split(",") if o.strip()]
 
 # Ensure directories exist
@@ -80,6 +85,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.netlify\.app",  # allow all Netlify preview deploys
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
